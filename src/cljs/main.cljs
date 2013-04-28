@@ -1,6 +1,7 @@
 (ns main
   (:require [enfocus.core :as ef]
-            [clojure.browser.repl :as repl])
+            [clojure.browser.repl :as repl]
+            [clojure.string :as str])
   (:require-macros [enfocus.macros :as em])
   (:use [jayq.core :only [$ css inner]]))
 
@@ -12,21 +13,23 @@
   []
   [:#input-button] (em/set-attr :style ""))
 
-(em/defsnippet tablefrag "/html/main.html" [:#mytable]
-  [{:keys [header content]}]
-  [:#mytable] (em/do->(em/set-attr :style "")
-                      (em/append content))
-  [:th] (em/content header))
+(defn make-table [{:keys [header content]}]
+  (str "<table><tr><th>" header "</th></tr>" content "</table>"))
 
-(em/defsnippet rowfrag "/html/main.html" [:#my-row]
-  [param]
-  [:#my-td] (em/content param))
+(defn make-row [content]
+  (str "<tr><td>" content "</td></tr>"))
+
+(def -input-button
+  "<div id=\"input-button\">
+      <input id=\"mytext\" type=\"text\"></input><br/>
+      <a href=\"#\" onclick=\"main.add_to_list();\">Add to list</a>
+    </div>")
 
 (defn show-list []
   (em/at js/document
-         [:#insert-here] (em/do-> (em/content (tablefrag {:header "Just a list"
-                                                          :content (map rowfrag @my-vals)}))
-                                  (em/append (input-button)))))
+         [:#insert-here] (em/content (str/join " " [(make-table {:header "Just a list"
+                                                                :content (str/join " " (map make-row @my-vals))})
+                                                    -input-button]))))
 
 (defn ^:export add-to-list []
   (let [data (em/from js/document
@@ -39,4 +42,3 @@
   (show-list))
 
 (set! (.-onload js/window) start)
-
